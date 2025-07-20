@@ -69,10 +69,19 @@ jobs:
       - name: Update & install feeds
         working-directory: openwrt
         run: |
-          echo "📦 更新 Feeds"
-          ./scripts/feeds update -a
+          echo "📦 更新 Feeds（带重试）"
+          retries=3
+          until ./scripts/feeds update -a; do
+            retries=$((retries-1))
+            if [ $retries -le 0 ]; then
+              echo "❌ 更新 feeds 多次失败，退出"
+              exit 1
+            fi
+            echo "⚠️ 更新失败，剩余重试次数：$retries，5s 后重试..."
+            sleep 5
+          done
           echo "📦 安装 Feeds"
-          ./scripts/feeds install -a
+          ./scripts/feeds install -a || true
 
       - name: Setup configuration
         run: |
